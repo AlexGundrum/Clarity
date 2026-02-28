@@ -42,6 +42,15 @@ function getAudioFilename(path: string): string {
   return path.split(/[/\\]/).pop() ?? path;
 }
 
+/** Map language code to full language name for target_language (Gemini output) */
+const LANGUAGE_CODE_TO_TARGET: Record<string, string> = {
+  en: "English",
+  es: "Spanish",
+  fr: "French",
+  de: "German",
+  ja: "Japanese",
+};
+
 interface RecorderProps {
   compareMode: boolean;
 }
@@ -139,9 +148,12 @@ export function Recorder({ compareMode }: RecorderProps) {
     setResultSlow(null);
 
     const ext = audioBlob.type.includes("webm") ? "webm" : "ogg";
+    const targetLanguage =
+      LANGUAGE_CODE_TO_TARGET[languageCode] ?? "English";
     const baseParams = new URLSearchParams({
       use_multimodal: String(useMultimodal),
       language_code: languageCode,
+      target_language: targetLanguage,
     });
 
     const doRequest = async (pace: "normal" | "slow"): Promise<PipelineResult> => {
