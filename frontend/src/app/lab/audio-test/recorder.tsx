@@ -2,6 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+interface PipelineResult {
+  dirty_transcript: string;
+  healed_transcript: string;
+  final_audio_path: string;
+  durations_s: Record<string, number>;
+}
+
 /**
  * MediaRecorder mime types in order of preference.
  * 16kHz Mono PCM is ideal for our backend; browsers typically support webm/opus.
@@ -26,11 +35,20 @@ function formatDuration(seconds: number): string {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
+/** Extract filename from server path (handles both / and \\) */
+function getAudioFilename(path: string): string {
+  return path.split(/[/\\]/).pop() ?? path;
+}
+
 export function Recorder() {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null);
+  const [useMultimodal, setUseMultimodal] = useState(false);
+  const [languageCode, setLanguageCode] = useState("en");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -102,7 +120,42 @@ export function Recorder() {
     setAudioBlob(null);
     setDuration(0);
     setError(null);
+    setPipelineResult(null);
   }, []);
+
+  const processAudio = useCallback(async () => {
+    if (!audioBlob || isProcessing) return;
+    setIsProcessing(true);
+    setError(null);
+    setPipelineResult(null);
+
+    try {
+      const formData = new FormData();
+      const ext = audioBlob.type.includes("webm") ? "webm" : "ogg";
+      formData.append("audio", audioBlob, `recording.${ext}`);
+
+      const params = new URLSearchParams({
+        use_multimodal: String(useMultimodal),
+        language_code: languageCode,
+      });
+      const res = await fetch(
+        `${API_BASE}/api/run-full-pipeline?${params}`,
+        { method: "POST", body: formData }
+      );
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(errBody || `HTTP ${res.status}`);
+      }
+
+      const data = (await res.json()) as PipelineResult;
+      setPipelineResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Pipeline request failed");
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [audioBlob, isProcessing, useMultimodal, languageCode]);
 
   // Create and revoke blob URL when audioBlob changes
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -115,6 +168,10 @@ export function Recorder() {
     setAudioUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [audioBlob]);
+
+  const healedAudioUrl = pipelineResult
+    ? `${API_BASE}/files/pipeline-output/${getAudioFilename(pipelineResult.final_audio_path)}`
+    : null;
 
   return (
     <div className="flex flex-col items-center gap-6">
@@ -178,6 +235,121 @@ export function Recorder() {
         <div className="w-full max-w-md space-y-2">
           <p className="text-center text-sm text-slate-500">Playback</p>
           <audio controls src={audioUrl ?? undefined} className="w-full" />
+        </div>
+      )}
+
+      {/* Pipeline options & Process button */}
+      {audioBlob && !isRecording && (
+        <div className="w-full max-w-md space-y-4 border-t border-slate-200 pt-6">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <label className="flex items-center gap-2">
+              <span className="text-sm text-slate-600">Path:</span>
+              <select
+                value={useMultimodal ? "multimodal" : "sequential"}
+                onChange={(e) =>
+                  setUseMultimodal(e.target.value === "multimodal")
+                }
+                className="rounded border border-slate-300 bg-white px-2 py-1 text-sm"
+              >
+                <option value="sequential">Sequential (Scribe → Gemini)</option>
+                <option value="multimodal">Multimodal (Gemini audio-native)</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2">
+              <span className="text-sm text-slate-600">Language:</span>
+              <select
+                value={languageCode}
+                onChange={(e) => setLanguageCode(e.target.value)}
+                className="rounded border border-slate-300 bg-white px-2 py-1 text-sm"
+              >
+                <option value="en">en</option>
+                <option value="es">es</option>
+                <option value="fr">fr</option>
+                <option value="de">de</option>
+                <option value="ja">ja</option>
+              </select>
+            </label>
+          </div>
+          <div className="flex justify-center">
+            <button
+              onClick={processAudio}
+              disabled={isProcessing}
+              type="button"
+              className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isProcessing ? (
+                <>
+                  <span
+                    className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+                    aria-hidden
+                  />
+                  Processing...
+                </>
+              ) : (
+                "Process with AI"
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Results */}
+      {pipelineResult && (
+        <div className="w-full max-w-2xl space-y-4 border-t border-slate-200 pt-6">
+          <h3 className="text-center font-mono text-sm font-semibold text-slate-700">
+            Results
+          </h3>
+
+          {/* Transcripts side-by-side */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+                Dirty Transcript
+              </p>
+              <p className="text-sm text-slate-800">
+                {pipelineResult.dirty_transcript || "(empty)"}
+              </p>
+            </div>
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-emerald-600">
+                Healed Transcript
+              </p>
+              <p className="text-sm text-slate-800">
+                {pipelineResult.healed_transcript || "(empty)"}
+              </p>
+            </div>
+          </div>
+
+          {/* Fixed audio player */}
+          {healedAudioUrl && (
+            <div className="space-y-2">
+              <p className="text-center text-sm text-slate-500">
+                Healed Audio
+              </p>
+              <audio
+                controls
+                src={healedAudioUrl}
+                className="w-full"
+              />
+            </div>
+          )}
+
+          {/* Metrics */}
+          {Object.keys(pipelineResult.durations_s).length > 0 && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50/30 px-4 py-3">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+                Durations
+              </p>
+              <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-600">
+                {Object.entries(pipelineResult.durations_s).map(([key, val]) => (
+                  <li key={key}>
+                    <span className="font-mono">{key}:</span>{" "}
+                    {val.toFixed(2)}s
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>
