@@ -1,0 +1,18 @@
+{
+  "timestamp_utc": "2026-02-28T06:09:21.858734+00:00",
+  "url": "ws://127.0.0.1:8000/api/ws/stream",
+  "path_choice": 2,
+  "use_websocket": true,
+  "debug_id": "5f4613c1d59a4305ab572d910e89bf10",
+  "wav_source": "sample.wav",
+  "payload_len": 1683884,
+  "duration_s": 10.0,
+  "listen_s": 15.0,
+  "ttfb_s": 3.2178,
+  "ttfb_ms": 3217.77,
+  "recv_bytes": 217088,
+  "recv_chunks": 53,
+  "output_wav": "C:\\Users\\alexg\\code\\hackathons\\clem\\Clarity\\backend\\tests\\ws_test_output\\20260228T060906\\output.wav",
+  "transcript_file": "C:\\Users\\alexg\\code\\hackathons\\clem\\Clarity\\backend\\tests\\ws_test_output\\20260228T060906\\transcript.txt",
+  "healed_text_preview": "I am doing this to practice to see if the stutter detection and elimination works"
+}

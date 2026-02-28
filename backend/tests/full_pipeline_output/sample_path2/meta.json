@@ -1,0 +1,11 @@
+{
+  "mode": "scribe_first",
+  "transcript": "I, I, I, I am doing this, um, I'm doing this to practice to see if the stutter detection and elimination works",
+  "healed_text": "I am doing this to practice to see if the stutter detection and elimination works",
+  "tts_bytes": "202850",
+  "duration_s": "2.581",
+  "tts_latency_s": "0.648",
+  "full_run_duration_s": "2.584",
+  "full_run_tts_bytes": "202850",
+  "path_choice": "2"
+}

@@ -1,0 +1,18 @@
+{
+  "timestamp_utc": "2026-02-28T05:50:56.297055+00:00",
+  "url": "ws://127.0.0.1:8000/api/ws/stream",
+  "path_choice": 1,
+  "use_websocket": true,
+  "debug_id": "ed3f156fe97e4ccd8495124f40c452de",
+  "wav_source": "sample.wav",
+  "payload_len": 384044,
+  "duration_s": 2.0,
+  "listen_s": 15.0,
+  "ttfb_s": 2.591,
+  "ttfb_ms": 2591.03,
+  "recv_bytes": 32912,
+  "recv_chunks": 1,
+  "output_wav": "C:\\Users\\alexg\\code\\hackathons\\clem\\Clarity\\backend\\tests\\ws_test_output\\20260228T055040\\output.wav",
+  "transcript_file": "C:\\Users\\alexg\\code\\hackathons\\clem\\Clarity\\backend\\tests\\ws_test_output\\20260228T055040\\transcript.txt",
+  "healed_text_preview": "I"
+}

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routers.pipeline import router as pipeline_router
+from backend.routers.pipeline_new import router as pipeline_new_router
 
 app = FastAPI(title="Clarity", version="0.1.0")
 
@@ -13,6 +14,7 @@ app.add_middleware(
 )
 
 app.include_router(pipeline_router, prefix="/api")
+app.include_router(pipeline_new_router, prefix="/api")
 
 
 @app.get("/api/health")

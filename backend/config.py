@@ -1,7 +1,12 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+_BACKEND_ENV = Path(__file__).resolve().parent / ".env"
+# Load `backend/.env` when running from repo root; do not override real env vars.
+load_dotenv(dotenv_path=_BACKEND_ENV, override=False)
+# Also load a repo-root `.env` if present (also non-overriding).
+load_dotenv(override=False)
 
 # ---------------------------------------------------------------------------
 # API Keys
