@@ -16,6 +16,10 @@ _OUTPUT_DIR = Path(__file__).resolve().parents[1] / "tests" / "full_pipeline_out
 @router.post("/run-full-pipeline")
 async def run_full_pipeline_endpoint(
     audio: UploadFile = File(...),
+    language_code: str = Query(
+        "en",
+        description="Language code hint for Scribe STT when not using multimodal.",
+    ),
     use_multimodal: bool = Query(
         False,
         description="If true, run Gemini multimodal (audio-native) instead of Scribe STT.",
@@ -33,6 +37,7 @@ async def run_full_pipeline_endpoint(
         audio_bytes=audio_bytes,
         filename=audio.filename,
         output_dir=_OUTPUT_DIR,
+        language_code=language_code,
         use_multimodal=use_multimodal,
     )
     return result_to_dict(result)
