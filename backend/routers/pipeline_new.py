@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 
@@ -30,6 +31,10 @@ async def run_full_pipeline_endpoint(
         False,
         description="If true, run Gemini multimodal (audio-native) instead of Scribe STT.",
     ),
+    pace: Literal["normal", "slow"] = Query(
+        "normal",
+        description="TTS pace: 'normal' or 'slow' (slow uses punctuation injection + deliberate voice).",
+    ),
 ):
     """Accept an entire audio file, run the selected pipeline, and return transcripts + output path."""
     if audio is None:
@@ -46,5 +51,6 @@ async def run_full_pipeline_endpoint(
         language_code=language_code,
         target_language=target_language,
         use_multimodal=use_multimodal,
+        pace=pace,
     )
     return result_to_dict(result)

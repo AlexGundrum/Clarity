@@ -13,7 +13,7 @@ import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from google import genai
 from google.genai import types as genai_types
@@ -29,6 +29,7 @@ class FullPipelineResult:
     healed_transcript: str
     final_audio_path: str
     durations_s: Dict[str, float]
+    injected_transcript: Optional[str] = None  # When pace=="slow", text sent to TTS after punctuation injection
 
 
 _gemini_client: Optional[genai.Client] = None
@@ -41,6 +42,13 @@ def _get_gemini_client() -> genai.Client:
             raise RuntimeError("Missing GOOGLE_API_KEY in environment (.env).")
         _gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
     return _gemini_client
+
+
+def _inject_punctuation_for_slow(text: str) -> str:
+    """Apply punctuation injection for slow TTS: periods -> ellipsis, commas -> double hyphen."""
+    t = text.replace(".", "... ")
+    t = t.replace(",", "--")
+    return t
 
 
 def _build_gemini_system_instruction(target_language: Optional[str] = None) -> str:
@@ -145,11 +153,13 @@ async def run_full_pipeline(
     language_code: str = "en",
     target_language: str = "English",
     use_multimodal: bool = False,
+    pace: Literal["normal", "slow"] = "normal",
 ) -> FullPipelineResult:
     """STT -> Gemini heal -> TTS. Returns transcripts + path to healed WAV."""
     durations: Dict[str, float] = {}
     dirty_transcript = ""
     healed_transcript = ""
+    injected_transcript: Optional[str] = None
 
     if use_multimodal:
         t_mm = time.perf_counter()
@@ -176,12 +186,18 @@ async def run_full_pipeline(
             )
         durations["gemini"] = time.perf_counter() - t1
 
+    tts_input = healed_transcript or dirty_transcript
+    if pace == "slow" and tts_input:
+        injected_transcript = _inject_punctuation_for_slow(tts_input)
+        tts_input = injected_transcript
+
     t2 = time.perf_counter()
     final_path = await synthesize_and_save(
-        text=healed_transcript or dirty_transcript,
+        text=tts_input,
         out_dir=output_dir,
         stem="final_audio",
         save_mode="auto",
+        pace=pace,
     )
     durations["tts"] = time.perf_counter() - t2
     durations["total"] = sum(durations.values())
@@ -191,13 +207,17 @@ async def run_full_pipeline(
         healed_transcript=healed_transcript,
         final_audio_path=str(final_path),
         durations_s=durations,
+        injected_transcript=injected_transcript,
     )
 
 
 def result_to_dict(result: FullPipelineResult) -> Dict[str, Any]:
-    return {
+    d: Dict[str, Any] = {
         "dirty_transcript": result.dirty_transcript,
         "healed_transcript": result.healed_transcript,
         "final_audio_path": result.final_audio_path,
         "durations_s": result.durations_s,
     }
+    if result.injected_transcript is not None:
+        d["injected_transcript"] = result.injected_transcript
+    return d

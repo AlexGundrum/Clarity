@@ -73,19 +73,63 @@ async def synthesize_speech_full(
         return resp.content
 
 
+async def synthesize_speech_slow_full(
+    *,
+    text: str,
+    output_format: Optional[str] = None,
+) -> bytes:
+    """Synthesize full audio with slower, more deliberate voice settings.
+
+    Same as synthesize_speech_full but with stability=0.95 and style=0.0.
+    """
+    if not ELEVENLABS_API_KEY:
+        raise RuntimeError("Missing ELEVENLABS_API_KEY in environment (.env).")
+    if not ELEVENLABS_VOICE_ID:
+        raise RuntimeError("Missing ELEVENLABS_VOICE_ID in environment (.env).")
+
+    fmt = (output_format or ELEVENLABS_OUTPUT_FORMAT).strip() or ELEVENLABS_OUTPUT_FORMAT
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}?output_format={fmt}"
+
+    headers = {
+        "xi-api-key": ELEVENLABS_API_KEY,
+        "Content-Type": "application/json",
+        "Accept": "audio/*",
+    }
+    payload = {
+        "text": text,
+        "model_id": ELEVENLABS_TTS_MODEL,
+        "voice_settings": {
+            "stability": 0.95,
+            "similarity_boost": 0.5,
+            "style": 0.0,
+            "use_speaker_boost": True,
+        },
+    }
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        resp = await client.post(url, headers=headers, json=payload)
+        resp.raise_for_status()
+        return resp.content
+
+
 async def synthesize_and_save(
     *,
     text: str,
     out_dir: Path,
     stem: str = "final_audio",
     save_mode: Literal["auto", "raw_and_wav", "raw_only", "wav_only"] = "auto",
+    pace: Literal["normal", "slow"] = "normal",
 ) -> Path:
     """Synthesize audio and save it to disk, returning the saved file path.
 
     - If ElevenLabs output is PCM, we write a `.raw` and a wrapped `.wav` by default.
     - If output is not PCM, we write a single `.bin` file unless `wav_only` is requested.
+    - pace: "slow" uses slower/deliberate voice settings (stability 0.95, style 0.0).
     """
-    audio_bytes = await synthesize_speech_full(text=text)
+    if pace == "slow":
+        audio_bytes = await synthesize_speech_slow_full(text=text)
+    else:
+        audio_bytes = await synthesize_speech_full(text=text)
 
     fmt = (ELEVENLABS_OUTPUT_FORMAT or "").lower()
     looks_pcm = fmt.startswith("pcm_") or fmt == "pcm"

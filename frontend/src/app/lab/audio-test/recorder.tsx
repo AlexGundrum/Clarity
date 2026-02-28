@@ -9,6 +9,8 @@ interface PipelineResult {
   healed_transcript: string;
   final_audio_path: string;
   durations_s: Record<string, number>;
+  /** When pace=slow, the text sent to TTS after punctuation injection */
+  injected_transcript?: string;
 }
 
 /**
@@ -40,13 +42,18 @@ function getAudioFilename(path: string): string {
   return path.split(/[/\\]/).pop() ?? path;
 }
 
-export function Recorder() {
+interface RecorderProps {
+  compareMode: boolean;
+}
+
+export function Recorder({ compareMode }: RecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null);
+  const [resultNormal, setResultNormal] = useState<PipelineResult | null>(null);
+  const [resultSlow, setResultSlow] = useState<PipelineResult | null>(null);
   const [useMultimodal, setUseMultimodal] = useState(false);
   const [languageCode, setLanguageCode] = useState("en");
 
@@ -120,42 +127,57 @@ export function Recorder() {
     setAudioBlob(null);
     setDuration(0);
     setError(null);
-    setPipelineResult(null);
+    setResultNormal(null);
+    setResultSlow(null);
   }, []);
 
   const processAudio = useCallback(async () => {
     if (!audioBlob || isProcessing) return;
     setIsProcessing(true);
     setError(null);
-    setPipelineResult(null);
+    setResultNormal(null);
+    setResultSlow(null);
 
-    try {
+    const ext = audioBlob.type.includes("webm") ? "webm" : "ogg";
+    const baseParams = new URLSearchParams({
+      use_multimodal: String(useMultimodal),
+      language_code: languageCode,
+    });
+
+    const doRequest = async (pace: "normal" | "slow"): Promise<PipelineResult> => {
+      const params = new URLSearchParams(baseParams);
+      params.set("pace", pace);
       const formData = new FormData();
-      const ext = audioBlob.type.includes("webm") ? "webm" : "ogg";
       formData.append("audio", audioBlob, `recording.${ext}`);
-
-      const params = new URLSearchParams({
-        use_multimodal: String(useMultimodal),
-        language_code: languageCode,
-      });
       const res = await fetch(
         `${API_BASE}/api/run-full-pipeline?${params}`,
         { method: "POST", body: formData }
       );
-
       if (!res.ok) {
         const errBody = await res.text();
         throw new Error(errBody || `HTTP ${res.status}`);
       }
+      return res.json() as Promise<PipelineResult>;
+    };
 
-      const data = (await res.json()) as PipelineResult;
-      setPipelineResult(data);
+    try {
+      if (compareMode) {
+        const [normal, slow] = await Promise.all([
+          doRequest("normal"),
+          doRequest("slow"),
+        ]);
+        setResultNormal(normal);
+        setResultSlow(slow);
+      } else {
+        const data = await doRequest("normal");
+        setResultNormal(data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Pipeline request failed");
     } finally {
       setIsProcessing(false);
     }
-  }, [audioBlob, isProcessing, useMultimodal, languageCode]);
+  }, [audioBlob, isProcessing, useMultimodal, languageCode, compareMode]);
 
   // Create and revoke blob URL when audioBlob changes
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -169,8 +191,11 @@ export function Recorder() {
     return () => URL.revokeObjectURL(url);
   }, [audioBlob]);
 
-  const healedAudioUrl = pipelineResult
-    ? `${API_BASE}/files/pipeline-output/${getAudioFilename(pipelineResult.final_audio_path)}`
+  const healedAudioUrl = resultNormal
+    ? `${API_BASE}/files/pipeline-output/${getAudioFilename(resultNormal.final_audio_path)}`
+    : null;
+  const slowAudioUrl = resultSlow
+    ? `${API_BASE}/files/pipeline-output/${getAudioFilename(resultSlow.final_audio_path)}`
     : null;
 
   return (
@@ -285,6 +310,8 @@ export function Recorder() {
                   />
                   Processing...
                 </>
+              ) : compareMode ? (
+                "Compare (Normal vs Slow)"
               ) : (
                 "Process with AI"
               )}
@@ -294,61 +321,116 @@ export function Recorder() {
       )}
 
       {/* Results */}
-      {pipelineResult && (
-        <div className="w-full max-w-2xl space-y-4 border-t border-slate-200 pt-6">
+      {(resultNormal || resultSlow) && (
+        <div className="w-full max-w-4xl space-y-4 border-t border-slate-200 pt-6">
           <h3 className="text-center font-mono text-sm font-semibold text-slate-700">
             Results
           </h3>
 
-          {/* Transcripts side-by-side */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
-                Dirty Transcript
-              </p>
-              <p className="text-sm text-slate-800">
-                {pipelineResult.dirty_transcript || "(empty)"}
-              </p>
-            </div>
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-emerald-600">
-                Healed Transcript
-              </p>
-              <p className="text-sm text-slate-800">
-                {pipelineResult.healed_transcript || "(empty)"}
-              </p>
-            </div>
-          </div>
+          {compareMode && resultNormal && resultSlow ? (
+            /* A/B Comparison: two cards side-by-side */
+            <div className="grid gap-6 sm:grid-cols-2">
+              {/* Left: Standard Pace */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  Standard Pace
+                </p>
+                <p className="mb-2 text-xs text-slate-500">Healed Transcript</p>
+                <p className="mb-4 text-sm text-slate-800">
+                  {resultNormal.healed_transcript || "(empty)"}
+                </p>
+                {healedAudioUrl && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-500">Audio</p>
+                    <audio controls src={healedAudioUrl} className="w-full" />
+                  </div>
+                )}
+                {resultNormal.durations_s.tts != null && (
+                  <p className="mt-2 font-mono text-xs text-slate-500">
+                    TTS: {resultNormal.durations_s.tts.toFixed(2)}s
+                  </p>
+                )}
+              </div>
 
-          {/* Fixed audio player */}
-          {healedAudioUrl && (
-            <div className="space-y-2">
-              <p className="text-center text-sm text-slate-500">
-                Healed Audio
-              </p>
-              <audio
-                controls
-                src={healedAudioUrl}
-                className="w-full"
-              />
+              {/* Right: Deliberate Pace */}
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-indigo-700">
+                  Deliberate Pace
+                </p>
+                <p className="mb-2 text-xs text-slate-500">Healed Transcript</p>
+                <p className="mb-4 text-sm text-slate-800">
+                  {resultSlow.healed_transcript || "(empty)"}
+                </p>
+                {resultSlow.injected_transcript && (
+                  <div className="mb-4 rounded border border-amber-200 bg-amber-50/50 p-3">
+                    <p className="mb-1 text-xs font-medium uppercase tracking-wider text-amber-700">
+                      Injected Text (sent to TTS)
+                    </p>
+                    <p className="font-mono text-xs text-slate-700">
+                      {resultSlow.injected_transcript}
+                    </p>
+                  </div>
+                )}
+                {slowAudioUrl && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-500">Audio</p>
+                    <audio controls src={slowAudioUrl} className="w-full" />
+                  </div>
+                )}
+                {resultSlow.durations_s.tts != null && (
+                  <p className="mt-2 font-mono text-xs text-slate-500">
+                    TTS: {resultSlow.durations_s.tts.toFixed(2)}s
+                  </p>
+                )}
+              </div>
             </div>
-          )}
+          ) : (
+            /* Single result (non-compare mode) */
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Dirty Transcript
+                  </p>
+                  <p className="text-sm text-slate-800">
+                    {resultNormal?.dirty_transcript || "(empty)"}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-emerald-600">
+                    Healed Transcript
+                  </p>
+                  <p className="text-sm text-slate-800">
+                    {resultNormal?.healed_transcript || "(empty)"}
+                  </p>
+                </div>
+              </div>
 
-          {/* Metrics */}
-          {Object.keys(pipelineResult.durations_s).length > 0 && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50/30 px-4 py-3">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
-                Durations
-              </p>
-              <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-600">
-                {Object.entries(pipelineResult.durations_s).map(([key, val]) => (
-                  <li key={key}>
-                    <span className="font-mono">{key}:</span>{" "}
-                    {val.toFixed(2)}s
-                  </li>
-                ))}
-              </ul>
-            </div>
+              {healedAudioUrl && (
+                <div className="space-y-2">
+                  <p className="text-center text-sm text-slate-500">
+                    Healed Audio
+                  </p>
+                  <audio controls src={healedAudioUrl} className="w-full" />
+                </div>
+              )}
+
+              {resultNormal && Object.keys(resultNormal.durations_s).length > 0 && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50/30 px-4 py-3">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Durations
+                  </p>
+                  <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-600">
+                    {Object.entries(resultNormal.durations_s).map(([key, val]) => (
+                      <li key={key}>
+                        <span className="font-mono">{key}:</span>{" "}
+                        {val.toFixed(2)}s
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
