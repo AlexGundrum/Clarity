@@ -1,7 +1,7 @@
-# FlowState: Project Context & Architecture
+# Clarity: Project Context & Architecture
 
 ## Overview
-FlowState is a real-time "Vocal OS" and digital bridge being built at CUhackit 2026. It acts as an enterprise-grade AI middleware that sits between the user's hardware and their video conferencing software (Zoom/Teams). By utilizing a strategic 2-second "broadcast buffer," FlowState intercepts speech disfluencies, repairs them, and outputs a flawless audio/video stream.
+Clarity is a real-time "Vocal OS" and digital bridge being built at CUhackit 2026. It acts as an enterprise-grade AI middleware that sits between the user's hardware and their video conferencing software (Zoom/Teams). By utilizing a strategic 2-second "broadcast buffer," Clarity intercepts speech disfluencies, repairs them, and outputs a flawless audio/video stream.
 
 ## Targeted Hackathon Tracks
 1. **Clemson Computing Capstone (Industry Impact):** Positioned as a B2B enterprise tool to preserve "executive presence" and prevent neurodivergent talent attrition.
