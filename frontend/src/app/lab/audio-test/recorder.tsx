@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CorrectionLog } from "./CorrectionLog";
+import { ProcessingWaveform } from "./ProcessingWaveform";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -211,241 +213,196 @@ export function Recorder({ compareMode }: RecorderProps) {
     : null;
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      {/* Timer */}
-      <div className="font-mono text-3xl tabular-nums text-slate-600">
-        {formatDuration(duration)}
-      </div>
-
-      {/* Recording indicator */}
-      {isRecording && (
-        <div className="flex items-center gap-2 text-red-600">
-          <span
-            className="h-3 w-3 rounded-full bg-red-500 animate-pulse"
-            aria-hidden
-          />
-          <span className="text-sm font-medium">Recording...</span>
+    <div className="grid w-full gap-8 lg:grid-cols-2 lg:gap-10">
+      {/* Left column: Recording controls + Buffer Waveform */}
+      <div className="flex flex-col items-center gap-6">
+        {/* Timer */}
+        <div className="font-mono text-3xl tabular-nums text-slate-600">
+          {formatDuration(duration)}
         </div>
-      )}
 
-      {/* Controls */}
-      <div className="flex items-center gap-4">
-        {!isRecording ? (
-          <>
-            <button
-              onClick={startRecording}
-              type="button"
-              className="rounded-full bg-red-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/25 transition-all hover:bg-red-600 hover:shadow-red-500/30 active:scale-95"
-            >
-              Record
-            </button>
-            {audioBlob && (
-              <button
-                onClick={reRecord}
-                type="button"
-                className="rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50"
-              >
-                Re-record
-              </button>
-            )}
-          </>
-        ) : (
-          <button
-            onClick={stopRecording}
-            type="button"
-            className="rounded-full bg-slate-700 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-slate-800 active:scale-95"
-          >
-            Stop
-          </button>
+        {/* Recording indicator */}
+        {isRecording && (
+          <div className="flex items-center gap-2 text-red-600">
+            <span
+              className="h-3 w-3 rounded-full bg-red-500 animate-pulse"
+              aria-hidden
+            />
+            <span className="text-sm font-medium">Recording...</span>
+          </div>
         )}
-      </div>
 
-      {/* Error */}
-      {error && (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      )}
-
-      {/* Playback */}
-      {audioBlob && !isRecording && (
-        <div className="w-full max-w-md space-y-2">
-          <p className="text-center text-sm text-slate-500">Playback</p>
-          <audio controls src={audioUrl ?? undefined} className="w-full" />
-        </div>
-      )}
-
-      {/* Pipeline options & Process button */}
-      {audioBlob && !isRecording && (
-        <div className="w-full max-w-md space-y-4 border-t border-slate-200 pt-6">
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <label className="flex items-center gap-2">
-              <span className="text-sm text-slate-600">Path:</span>
-              <select
-                value={useMultimodal ? "multimodal" : "sequential"}
-                onChange={(e) =>
-                  setUseMultimodal(e.target.value === "multimodal")
-                }
-                className="rounded border border-slate-300 bg-white px-2 py-1 text-sm"
-              >
-                <option value="sequential">Sequential (Scribe → Gemini)</option>
-                <option value="multimodal">Multimodal (Gemini audio-native)</option>
-              </select>
-            </label>
-            <label className="flex items-center gap-2">
-              <span className="text-sm text-slate-600">Language:</span>
-              <select
-                value={languageCode}
-                onChange={(e) => setLanguageCode(e.target.value)}
-                className="rounded border border-slate-300 bg-white px-2 py-1 text-sm"
-              >
-                <option value="en">en</option>
-                <option value="es">es</option>
-                <option value="fr">fr</option>
-                <option value="de">de</option>
-                <option value="ja">ja</option>
-              </select>
-            </label>
-          </div>
-          <div className="flex justify-center">
-            <button
-              onClick={processAudio}
-              disabled={isProcessing}
-              type="button"
-              className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isProcessing ? (
-                <>
-                  <span
-                    className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
-                    aria-hidden
-                  />
-                  Processing...
-                </>
-              ) : compareMode ? (
-                "Compare (Normal vs Slow)"
-              ) : (
-                "Process with AI"
-              )}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Results */}
-      {(resultNormal || resultSlow) && (
-        <div className="w-full max-w-4xl space-y-4 border-t border-slate-200 pt-6">
-          <h3 className="text-center font-mono text-sm font-semibold text-slate-700">
-            Results
-          </h3>
-
-          {compareMode && resultNormal && resultSlow ? (
-            /* A/B Comparison: two cards side-by-side */
-            <div className="grid gap-6 sm:grid-cols-2">
-              {/* Left: Standard Pace */}
-              <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                  Standard Pace
-                </p>
-                <p className="mb-2 text-xs text-slate-500">Healed Transcript</p>
-                <p className="mb-4 text-sm text-slate-800">
-                  {resultNormal.healed_transcript || "(empty)"}
-                </p>
-                {healedAudioUrl && (
-                  <div className="space-y-1">
-                    <p className="text-xs text-slate-500">Audio</p>
-                    <audio controls src={healedAudioUrl} className="w-full" />
-                  </div>
-                )}
-                {resultNormal.durations_s.tts != null && (
-                  <p className="mt-2 font-mono text-xs text-slate-500">
-                    TTS: {resultNormal.durations_s.tts.toFixed(2)}s
-                  </p>
-                )}
-              </div>
-
-              {/* Right: Deliberate Pace */}
-              <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-indigo-700">
-                  Deliberate Pace
-                </p>
-                <p className="mb-2 text-xs text-slate-500">Healed Transcript</p>
-                <p className="mb-4 text-sm text-slate-800">
-                  {resultSlow.healed_transcript || "(empty)"}
-                </p>
-                {resultSlow.injected_transcript && (
-                  <div className="mb-4 rounded border border-amber-200 bg-amber-50/50 p-3">
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wider text-amber-700">
-                      Injected Text (sent to TTS)
-                    </p>
-                    <p className="font-mono text-xs text-slate-700">
-                      {resultSlow.injected_transcript}
-                    </p>
-                  </div>
-                )}
-                {slowAudioUrl && (
-                  <div className="space-y-1">
-                    <p className="text-xs text-slate-500">Audio</p>
-                    <audio controls src={slowAudioUrl} className="w-full" />
-                  </div>
-                )}
-                {resultSlow.durations_s.tts != null && (
-                  <p className="mt-2 font-mono text-xs text-slate-500">
-                    TTS: {resultSlow.durations_s.tts.toFixed(2)}s
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            /* Single result (non-compare mode) */
+        {/* Controls */}
+        <div className="flex items-center gap-4">
+          {!isRecording ? (
             <>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
-                    Dirty Transcript
-                  </p>
-                  <p className="text-sm text-slate-800">
-                    {resultNormal?.dirty_transcript || "(empty)"}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-emerald-600">
-                    Healed Transcript
-                  </p>
-                  <p className="text-sm text-slate-800">
-                    {resultNormal?.healed_transcript || "(empty)"}
-                  </p>
-                </div>
-              </div>
-
-              {healedAudioUrl && (
-                <div className="space-y-2">
-                  <p className="text-center text-sm text-slate-500">
-                    Healed Audio
-                  </p>
-                  <audio controls src={healedAudioUrl} className="w-full" />
-                </div>
-              )}
-
-              {resultNormal && Object.keys(resultNormal.durations_s).length > 0 && (
-                <div className="rounded-lg border border-slate-200 bg-slate-50/30 px-4 py-3">
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
-                    Durations
-                  </p>
-                  <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-600">
-                    {Object.entries(resultNormal.durations_s).map(([key, val]) => (
-                      <li key={key}>
-                        <span className="font-mono">{key}:</span>{" "}
-                        {val.toFixed(2)}s
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              <button
+                onClick={startRecording}
+                type="button"
+                className="rounded-full bg-red-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/25 transition-all hover:bg-red-600 hover:shadow-red-500/30 active:scale-95"
+              >
+                Record
+              </button>
+              {audioBlob && (
+                <button
+                  onClick={reRecord}
+                  type="button"
+                  className="rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50"
+                >
+                  Re-record
+                </button>
               )}
             </>
+          ) : (
+            <button
+              onClick={stopRecording}
+              type="button"
+              className="rounded-full bg-slate-700 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-slate-800 active:scale-95"
+            >
+              Stop
+            </button>
           )}
         </div>
-      )}
+
+        {/* Error */}
+        {error && (
+          <p className="text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        )}
+
+        {/* Raw playback */}
+        {audioBlob && !isRecording && (
+          <div className="w-full max-w-md space-y-2">
+            <p className="text-center text-sm text-slate-500">Raw Playback</p>
+            <audio controls src={audioUrl ?? undefined} className="w-full" />
+          </div>
+        )}
+
+        {/* Pipeline options & Process button */}
+        {audioBlob && !isRecording && (
+          <div className="w-full max-w-md space-y-4 border-t border-slate-200 pt-6">
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <label className="flex items-center gap-2">
+                <span className="text-sm text-slate-600">Path:</span>
+                <select
+                  value={useMultimodal ? "multimodal" : "sequential"}
+                  onChange={(e) =>
+                    setUseMultimodal(e.target.value === "multimodal")
+                  }
+                  className="rounded border border-slate-300 bg-white px-2 py-1 text-sm"
+                >
+                  <option value="sequential">Sequential (Scribe → Gemini)</option>
+                  <option value="multimodal">Multimodal (Gemini audio-native)</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="text-sm text-slate-600">Language:</span>
+                <select
+                  value={languageCode}
+                  onChange={(e) => setLanguageCode(e.target.value)}
+                  className="rounded border border-slate-300 bg-white px-2 py-1 text-sm"
+                >
+                  <option value="en">en</option>
+                  <option value="es">es</option>
+                  <option value="fr">fr</option>
+                  <option value="de">de</option>
+                  <option value="ja">ja</option>
+                </select>
+              </label>
+            </div>
+            <div className="flex justify-center">
+              <button
+                onClick={processAudio}
+                disabled={isProcessing}
+                type="button"
+                className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isProcessing ? (
+                  <>
+                    <span
+                      className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+                      aria-hidden
+                    />
+                    Processing...
+                  </>
+                ) : compareMode ? (
+                  "Compare (Normal vs Slow)"
+                ) : (
+                  "Process with AI"
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Processing Buffer Waveform */}
+        <div className="w-full">
+          <ProcessingWaveform isProcessing={isProcessing} />
+        </div>
+      </div>
+
+      {/* Right column: Correction Log (Diff) + Audio players */}
+      <div className="flex flex-col gap-6">
+        {/* Correction Log with diff */}
+        {resultNormal && (
+          <CorrectionLog
+            key={resultNormal.final_audio_path}
+            pipelineResult={resultNormal}
+            compareMode={compareMode}
+          />
+        )}
+
+        {/* Audio players */}
+        {(resultNormal || resultSlow) && (
+          <div className="space-y-4">
+            <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-600">
+              Healed Audio
+            </h3>
+
+            {compareMode && resultNormal && resultSlow ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                    Standard Pace
+                  </p>
+                  {healedAudioUrl && (
+                    <audio controls src={healedAudioUrl} className="w-full" />
+                  )}
+                </div>
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-indigo-700">
+                    Deliberate Pace
+                  </p>
+                  {slowAudioUrl && (
+                    <audio controls src={slowAudioUrl} className="w-full" />
+                  )}
+                  {resultSlow.injected_transcript && (
+                    <p className="mt-2 font-mono text-[10px] text-slate-500 line-clamp-2">
+                      {resultSlow.injected_transcript}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              healedAudioUrl && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-4">
+                  <audio controls src={healedAudioUrl} className="w-full" />
+                </div>
+              )
+            )}
+          </div>
+        )}
+
+        {/* Placeholder when no results yet */}
+        {!resultNormal && !resultSlow && !isProcessing && (
+          <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/30 p-8">
+            <p className="font-mono text-xs text-slate-400">
+              Record → Process → See healing diff
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -12,7 +12,7 @@ export default function AudioTestLabPage() {
     <main className="relative z-10 min-h-screen">
       <Navbar />
 
-      <div className="mx-auto max-w-4xl px-4 pt-28 pb-16">
+      <div className="mx-auto max-w-6xl px-4 pt-28 pb-16">
         {/* Header */}
         <div className="mb-10 text-center">
           <h1 className="font-mono text-2xl font-bold tracking-tight text-slate-800">
