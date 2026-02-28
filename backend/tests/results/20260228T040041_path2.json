@@ -1,0 +1,17 @@
+{
+  "timestamp_utc": "20260228T040041",
+  "url": "ws://127.0.0.1:8008/api/ws/stream",
+  "path_choice": 2,
+  "headers": {
+    "X-Clarity-Path": "2",
+    "X-Clarity-Debug-Id": "my_ninth_run"
+  },
+  "wav_source": "sample.wav",
+  "chunk_ms": 3000,
+  "duration_s": 3.0,
+  "listen_s": 15.0,
+  "ttfb_ms": 1636.3500000006752,
+  "recv_bytes": 9658,
+  "recv_chunks": 3,
+  "first_chunk_len": 4096
+}
