@@ -56,29 +56,75 @@ async def gemini_heal_text_full(transcript: str) -> str:
     return (resp.text or "").strip()
 
 
+async def gemini_multimodal_process_full(
+    audio_bytes: bytes,
+    mime_type: str = "audio/wav",
+) -> str:
+    """Send raw audio directly to Gemini and get healed/translated text back.
+
+    This is the multimodal "Path 1" where Gemini listens to the audio natively.
+    """
+    client = _get_gemini_client()
+
+    audio_part = genai_types.Part.from_bytes(
+        data=audio_bytes,
+        mime_type=mime_type,
+    )
+
+    resp = await asyncio.to_thread(
+        client.models.generate_content,
+        model=GEMINI_MODEL,
+        contents=[audio_part],
+        config=genai_types.GenerateContentConfig(
+            system_instruction=GEMINI_ACTIVE_PROMPT,
+            temperature=0.2,
+        ),
+    )
+    return (resp.text or "").strip()
+
+
 async def run_full_pipeline(
     *,
     audio_bytes: bytes,
     filename: Optional[str],
     output_dir: Path,
     language_code: str = "en",
+    use_multimodal: bool = False,
 ) -> FullPipelineResult:
-    """Run STT -> Gemini -> TTS strictly sequentially, returning artifacts + timings."""
+    """Run the full pipeline sequentially, returning artifacts + timings.
+
+    If `use_multimodal` is False (default):
+        Path 2: Scribe STT -> Gemini text heal -> ElevenLabs TTS
+
+    If `use_multimodal` is True:
+        Path 1: Gemini multimodal (audio-native) -> ElevenLabs TTS
+    """
     durations: Dict[str, float] = {}
 
-    t0 = time.perf_counter()
-    dirty_transcript = await transcribe_audio_full(
-        audio_bytes=audio_bytes,
-        filename=filename,
-        language_code=language_code,
-    )
-    durations["stt"] = time.perf_counter() - t0
-
-    t1 = time.perf_counter()
+    dirty_transcript = ""
     healed_transcript = ""
-    if dirty_transcript.strip():
-        healed_transcript = await gemini_heal_text_full(dirty_transcript)
-    durations["gemini"] = time.perf_counter() - t1
+
+    if use_multimodal:
+        # Path 1 – Gemini consumes audio directly.
+        t_mm = time.perf_counter()
+        healed_transcript = await gemini_multimodal_process_full(audio_bytes=audio_bytes)
+        durations["gemini_multimodal"] = time.perf_counter() - t_mm
+        # There is no Scribe transcript; mark this explicitly.
+        dirty_transcript = "[Native Audio Processed]"
+    else:
+        # Path 2 – Scribe STT followed by Gemini text heal.
+        t0 = time.perf_counter()
+        dirty_transcript = await transcribe_audio_full(
+            audio_bytes=audio_bytes,
+            filename=filename,
+            language_code=language_code,
+        )
+        durations["stt"] = time.perf_counter() - t0
+
+        t1 = time.perf_counter()
+        if dirty_transcript.strip():
+            healed_transcript = await gemini_heal_text_full(dirty_transcript)
+        durations["gemini"] = time.perf_counter() - t1
 
     t2 = time.perf_counter()
     final_path = await synthesize_and_save(

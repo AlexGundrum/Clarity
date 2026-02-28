@@ -10,19 +10,29 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Verbose one-shot full pipeline test.")
     parser.add_argument("--audio", required=True, help="Path to a local .wav or .raw file")
     parser.add_argument("--url", default="http://127.0.0.1:8000/api/run-full-pipeline")
+    parser.add_argument(
+        "--multimodal",
+        action="store_true",
+        help="Use Gemini multimodal path (audio-native) instead of Scribe STT.",
+    )
     args = parser.parse_args()
 
     audio_path = Path(args.audio).expanduser().resolve()
     if not audio_path.exists():
         raise SystemExit(f"Audio file not found: {audio_path}")
 
-    print(f"Posting to: {args.url}")
+    url = args.url
+    if args.multimodal:
+        sep = "&" if "?" in url else "?"
+        url = f"{url}{sep}use_multimodal=true"
+
+    print(f"Posting to: {url}")
     print(f"Audio file: {audio_path} ({audio_path.stat().st_size} bytes)")
 
     t0 = time.perf_counter()
     with audio_path.open("rb") as f:
         files = {"audio": (audio_path.name, f, "application/octet-stream")}
-        resp = requests.post(args.url, files=files, timeout=600)
+        resp = requests.post(url, files=files, timeout=600)
     t_total = time.perf_counter() - t0
 
     print(f"HTTP status: {resp.status_code}")
@@ -42,9 +52,9 @@ def main() -> int:
     print(final_path)
 
     print("\n==== Durations (server-reported) ====")
-    for k in ["stt", "gemini", "tts", "total"]:
+    for k in ["stt", "gemini", "gemini_multimodal", "tts", "total"]:
         if k in durations:
-            print(f"{k:>6}: {durations[k]:.3f}s")
+            print(f"{k:>16}: {durations[k]:.3f}s")
     print(f"\nClient total (request wall time): {t_total:.3f}s")
 
     if final_path:

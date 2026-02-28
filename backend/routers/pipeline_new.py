@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 
 from backend.orchestrator_new import result_to_dict, run_full_pipeline
 
@@ -14,8 +14,14 @@ _OUTPUT_DIR = Path(__file__).resolve().parents[1] / "tests" / "full_pipeline_out
 
 
 @router.post("/run-full-pipeline")
-async def run_full_pipeline_endpoint(audio: UploadFile = File(...)):
-    """Accept an entire audio file, run STT->Gemini->TTS, and return transcripts + output path."""
+async def run_full_pipeline_endpoint(
+    audio: UploadFile = File(...),
+    use_multimodal: bool = Query(
+        False,
+        description="If true, run Gemini multimodal (audio-native) instead of Scribe STT.",
+    ),
+):
+    """Accept an entire audio file, run the selected pipeline, and return transcripts + output path."""
     if audio is None:
         raise HTTPException(status_code=400, detail="Missing `audio` file upload.")
 
@@ -27,5 +33,6 @@ async def run_full_pipeline_endpoint(audio: UploadFile = File(...)):
         audio_bytes=audio_bytes,
         filename=audio.filename,
         output_dir=_OUTPUT_DIR,
+        use_multimodal=use_multimodal,
     )
     return result_to_dict(result)
