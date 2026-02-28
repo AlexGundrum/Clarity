@@ -1,7 +1,7 @@
-INFO:     Started server process [24304]
+INFO:     Started server process [2472]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:8008 (Press CTRL+C to quit)
-INFO:     127.0.0.1:56215 - "WebSocket /api/ws/stream" [accepted]
+INFO:     Uvicorn running on http://127.0.0.1:8009 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58791 - "WebSocket /api/ws/stream" [accepted]
 INFO:     connection open
 INFO:     connection closed

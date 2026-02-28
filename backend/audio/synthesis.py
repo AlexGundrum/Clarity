@@ -19,18 +19,17 @@ async def synthesize_speech(text: str) -> AsyncIterator[bytes]:
 
     Yields raw audio chunks (PCM / mp3 depending on output_format config).
     """
-    url = TTS_URL.format(voice_id=ELEVENLABS_VOICE_ID)
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}/stream?output_format={ELEVENLABS_OUTPUT_FORMAT}"
 
     headers = {
         "xi-api-key": ELEVENLABS_API_KEY,
         "Content-Type": "application/json",
-        "Accept": "audio/mpeg",
+        "Accept": "audio/pcm",
     }
 
     payload = {
         "text": text,
         "model_id": ELEVENLABS_TTS_MODEL,
-        "output_format": ELEVENLABS_OUTPUT_FORMAT,
         "voice_settings": {
             "stability": 0.5,
             "similarity_boost": 0.75,
