@@ -208,5 +208,5 @@ __marimo__/
 
 # Clarity Pipeline Outputs
 backend/tests/artifacts/
-backend/tests/results/
+backend/tests/
 backend/.env
