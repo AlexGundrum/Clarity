@@ -1,0 +1,48 @@
+{
+  "sessionId": "demo-musetalk-004",
+  "mode": "Deep Sync (MuseTalk)",
+  "description": "AI-powered lip sync that matches corrected audio perfectly",
+  "corrections": [
+    {
+      "timestamp": 2.5,
+      "duration": 1.7,
+      "type": "stutter",
+      "confidence": 0.98,
+      "originalText": "The s-s-solution we're proposing...",
+      "correctedText": "The solution we're proposing...",
+      "severity": "high"
+    },
+    {
+      "timestamp": 7.8,
+      "duration": 1.2,
+      "type": "vocal_tic",
+      "confidence": 0.91,
+      "originalText": "[sniff] And then we can...",
+      "correctedText": "And then we can...",
+      "severity": "moderate"
+    },
+    {
+      "timestamp": 12.3,
+      "duration": 1.4,
+      "type": "stutter",
+      "confidence": 0.96,
+      "originalText": "This ap-ap-approach will help...",
+      "correctedText": "This approach will help...",
+      "severity": "moderate"
+    }
+  ],
+  "metrics": {
+    "avgLatency": 1.95,
+    "detectionRate": 0.95,
+    "voiceSimilarity": 0.99,
+    "processingFps": 60,
+    "totalCorrections": 3,
+    "sessionDuration": 15.1
+  },
+  "performance": {
+    "bufferDelay": "2.0s",
+    "accuracy": "95%",
+    "quality": "99%",
+    "realtime": true
+  }
+}

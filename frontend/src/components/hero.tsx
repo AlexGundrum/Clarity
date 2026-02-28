@@ -1,12 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { MarkerText } from "@/components/marker-text";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { Marquee } from "@/components/ui/marquee";
+import { FloatingLogo } from "@/components/floating-logo";
 
 /* ── Platform logos for inline marquee ── */
 function ZoomLogo() {
@@ -79,16 +81,9 @@ export function Hero() {
                     </p>
                 </ScrollReveal>
 
-                {/* Logo — big, centered right above CLARITY */}
+                {/* Logo — big, centered right above CLARITY with floating animation */}
                 <ScrollReveal delay={0.15} className="-mb-6 z-10">
-                    <Image
-                        src="/logo.png"
-                        alt="Clarity mascot"
-                        width={220}
-                        height={220}
-                        className="h-56 w-56 object-contain drop-shadow-md"
-                        priority
-                    />
+                    <FloatingLogo />
                 </ScrollReveal>
 
                 {/* CLARITY — character-by-character marker drawing */}
@@ -114,15 +109,9 @@ export function Hero() {
 
                 {/* CTA Buttons */}
                 <ScrollReveal delay={1.1} className="mt-8 flex flex-col gap-4 sm:flex-row">
-                    <button className="rounded-full bg-blue-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all duration-300 hover:bg-blue-700 hover:shadow-blue-700/25 hover:-translate-y-0.5">
-                        Request Early Access
-                    </button>
-                    <button className="glass-subtle flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-semibold text-blue-700 transition-all duration-300 hover:bg-white/40 hover:-translate-y-0.5">
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                        </svg>
-                        Watch Demo
-                    </button>
+                    <Link href="/dashboard" className="rounded-full bg-blue-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all duration-300 hover:bg-blue-700 hover:shadow-blue-700/25 hover:-translate-y-0.5 text-center">
+                        Try Dashboard
+                    </Link>
                 </ScrollReveal>
 
                 {/* Marquee — on first screen */}

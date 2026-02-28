@@ -1,0 +1,48 @@
+{
+  "sessionId": "demo-pixelate-002",
+  "mode": "Pixelate",
+  "description": "Applies pixelation effect during corrections to mask lip sync",
+  "corrections": [
+    {
+      "timestamp": 3.1,
+      "duration": 1.4,
+      "type": "stutter",
+      "confidence": 0.95,
+      "originalText": "Let me ex-ex-explain the concept...",
+      "correctedText": "Let me explain the concept...",
+      "severity": "moderate"
+    },
+    {
+      "timestamp": 7.2,
+      "duration": 0.9,
+      "type": "vocal_tic",
+      "confidence": 0.89,
+      "originalText": "[throat clearing] So basically...",
+      "correctedText": "So basically...",
+      "severity": "mild"
+    },
+    {
+      "timestamp": 11.5,
+      "duration": 1.1,
+      "type": "stutter",
+      "confidence": 0.93,
+      "originalText": "This is im-im-important because...",
+      "correctedText": "This is important because...",
+      "severity": "moderate"
+    }
+  ],
+  "metrics": {
+    "avgLatency": 1.75,
+    "detectionRate": 0.92,
+    "voiceSimilarity": 0.98,
+    "processingFps": 60,
+    "totalCorrections": 3,
+    "sessionDuration": 14.2
+  },
+  "performance": {
+    "bufferDelay": "1.7s",
+    "accuracy": "92%",
+    "quality": "98%",
+    "realtime": true
+  }
+}

@@ -1,4 +1,4 @@
-import { Navbar } from "@/components/navbar";
+import { Sidebar } from "@/components/sidebar";
 import { Hero } from "@/components/hero";
 import { HowItWorks } from "@/components/how-it-works";
 import { BentoGrid } from "@/components/bento-grid";
@@ -8,7 +8,7 @@ import { CtaSection } from "@/components/cta-section";
 export default function Home() {
   return (
     <main className="relative z-10 min-h-screen overflow-hidden">
-      <Navbar />
+      <Sidebar />
 
       <Hero />
 

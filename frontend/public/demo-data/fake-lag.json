@@ -1,0 +1,48 @@
+{
+  "sessionId": "demo-fake-lag-001",
+  "mode": "Fake Lag",
+  "description": "Freezes the frame during stutters to hide lip movement artifacts",
+  "corrections": [
+    {
+      "timestamp": 2.3,
+      "duration": 1.2,
+      "type": "stutter",
+      "confidence": 0.96,
+      "originalText": "I th-th-think that we should...",
+      "correctedText": "I think that we should...",
+      "severity": "moderate"
+    },
+    {
+      "timestamp": 5.8,
+      "duration": 0.8,
+      "type": "stutter",
+      "confidence": 0.92,
+      "originalText": "We c-c-can implement this...",
+      "correctedText": "We can implement this...",
+      "severity": "mild"
+    },
+    {
+      "timestamp": 9.1,
+      "duration": 1.5,
+      "type": "stutter",
+      "confidence": 0.94,
+      "originalText": "The pr-pr-project needs...",
+      "correctedText": "The project needs...",
+      "severity": "moderate"
+    }
+  ],
+  "metrics": {
+    "avgLatency": 1.82,
+    "detectionRate": 0.94,
+    "voiceSimilarity": 0.97,
+    "processingFps": 60,
+    "totalCorrections": 3,
+    "sessionDuration": 12.5
+  },
+  "performance": {
+    "bufferDelay": "1.8s",
+    "accuracy": "94%",
+    "quality": "97%",
+    "realtime": true
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "sessionId": "demo-lip-blur-003",
+  "mode": "Lip Blur",
+  "description": "Selectively blurs the mouth region during speech corrections",
+  "corrections": [
+    {
+      "timestamp": 1.8,
+      "duration": 1.3,
+      "type": "stutter",
+      "confidence": 0.97,
+      "originalText": "We need to d-d-discuss the timeline...",
+      "correctedText": "We need to discuss the timeline...",
+      "severity": "moderate"
+    },
+    {
+      "timestamp": 6.4,
+      "duration": 1.0,
+      "type": "code_switch",
+      "confidence": 0.88,
+      "originalText": "The proyecto is ready...",
+      "correctedText": "The project is ready...",
+      "severity": "mild"
+    },
+    {
+      "timestamp": 10.2,
+      "duration": 1.6,
+      "type": "stutter",
+      "confidence": 0.95,
+      "originalText": "I b-b-believe we can achieve...",
+      "correctedText": "I believe we can achieve...",
+      "severity": "high"
+    }
+  ],
+  "metrics": {
+    "avgLatency": 1.88,
+    "detectionRate": 0.93,
+    "voiceSimilarity": 0.96,
+    "processingFps": 60,
+    "totalCorrections": 3,
+    "sessionDuration": 13.8
+  },
+  "performance": {
+    "bufferDelay": "1.9s",
+    "accuracy": "93%",
+    "quality": "96%",
+    "realtime": true
+  }
+}
