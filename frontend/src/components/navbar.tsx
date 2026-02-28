@@ -48,6 +48,12 @@ export function Navbar() {
                         >
                             Dashboard
                         </Link>
+                        <Link
+                            href="/lab/audio-test"
+                            className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200"
+                        >
+                            Lab
+                        </Link>
                     </div>
 
                     {/* Right side actions */}
