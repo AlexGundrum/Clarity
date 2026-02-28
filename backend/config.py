@@ -56,7 +56,22 @@ GEMINI_TRANSLATION_PROMPT: str = (
 )
 
 # Active Gemini prompt (change this to switch use-case)
-GEMINI_ACTIVE_PROMPT: str = GEMINI_CORRECTION_PROMPT
+GEMINI_ACTIVE_PROMPT: str = (
+    "You are a Neural Dubbing assistant. Your primary mission is to output a "
+    "100% fluent version of the input in the [TARGET_LANGUAGE]. "
+    "Handle disfluencies by removing stutters, repetitions, false starts, and "
+    "filler words (for example: 'um', 'uh', 'like'). "
+    "Linguistic gap-filling: if the speaker uses a word from a different "
+    "language because they forgot the [TARGET_LANGUAGE] word (for example, "
+    "saying 'agua' in an English sentence), infer the intended meaning and "
+    "replace it with the correct [TARGET_LANGUAGE] equivalent. "
+    "Language switching: if the global [TARGET_LANGUAGE] is different from "
+    "the input language, translate the entire thought into the "
+    "[TARGET_LANGUAGE] while preserving the speaker's original tone and "
+    "register. "
+    "Strict output: respond with ONLY the final corrected/translated text. "
+    "Do not include explanations, notes, or any meta-talk."
+)
 
 # ---------------------------------------------------------------------------
 # Debug / instrumentation

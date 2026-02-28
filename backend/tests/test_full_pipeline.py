@@ -15,6 +15,23 @@ def main() -> int:
         action="store_true",
         help="Use Gemini multimodal path (audio-native) instead of Scribe STT.",
     )
+    parser.add_argument(
+        "--target-language",
+        default="English",
+        help=(
+            "Target language for the final healed/translated output. "
+            "This is passed through to Gemini as [TARGET_LANGUAGE]."
+        ),
+    )
+    parser.add_argument(
+        "--expect-gap-fill",
+        action="store_true",
+        help=(
+            "Assert a linguistic gap-filling scenario where the input audio says "
+            "'I would like a glass of... uh... how do you say... agua.' and the "
+            "healed transcript should be 'I would like a glass of water.'."
+        ),
+    )
     args = parser.parse_args()
 
     audio_path = Path(args.audio).expanduser().resolve()
@@ -22,6 +39,9 @@ def main() -> int:
         raise SystemExit(f"Audio file not found: {audio_path}")
 
     url = args.url
+    sep = "&" if "?" in url else "?"
+    # Always pass target_language explicitly so Gemini knows the desired output language.
+    url = f"{url}{sep}target_language={args.target_language}"
     if args.multimodal:
         sep = "&" if "?" in url else "?"
         url = f"{url}{sep}use_multimodal=true"
@@ -56,6 +76,19 @@ def main() -> int:
         if k in durations:
             print(f"{k:>16}: {durations[k]:.3f}s")
     print(f"\nClient total (request wall time): {t_total:.3f}s")
+
+    if args.expect_gap_fill:
+        expected = "I would like a glass of water."
+        print("\n==== Gap-Filling Test Case ====")
+        print(
+            "Input scenario (audio): 'I would like a glass of... uh... how do you say... agua.'"
+        )
+        print(f"Expected healed transcript: {expected!r}")
+        print(f"Actual healed transcript:   {healed!r}")
+        if healed.strip() == expected:
+            print("Result: PASS (linguistic gap-filling behaved as expected).")
+        else:
+            print("Result: FAIL (healed transcript did not match expected gap-filling output).")
 
     if final_path:
         p = Path(final_path)

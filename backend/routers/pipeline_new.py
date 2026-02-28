@@ -20,6 +20,12 @@ async def run_full_pipeline_endpoint(
         "en",
         description="Language code hint for Scribe STT when not using multimodal.",
     ),
+    target_language: str = Query(
+        "English",
+        description=(
+            "Target language for the final healed/translated output (used by Gemini + TTS)."
+        ),
+    ),
     use_multimodal: bool = Query(
         False,
         description="If true, run Gemini multimodal (audio-native) instead of Scribe STT.",
@@ -38,6 +44,7 @@ async def run_full_pipeline_endpoint(
         filename=audio.filename,
         output_dir=_OUTPUT_DIR,
         language_code=language_code,
+        target_language=target_language,
         use_multimodal=use_multimodal,
     )
     return result_to_dict(result)

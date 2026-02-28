@@ -42,14 +42,28 @@ def _get_gemini_client() -> genai.Client:
     return _gemini_client
 
 
-async def gemini_heal_text_full(transcript: str) -> str:
+def _build_gemini_system_instruction(target_language: Optional[str] = None) -> str:
+    """Return the active Gemini system prompt, optionally annotated with a target language."""
+    if not target_language:
+        return GEMINI_ACTIVE_PROMPT
+
+    return (
+        f"{GEMINI_ACTIVE_PROMPT} "
+        f"The current global [TARGET_LANGUAGE] for the final output is: "
+        f"{target_language}. Always ensure the final text is written entirely "
+        f"in this [TARGET_LANGUAGE]."
+    )
+
+
+async def gemini_heal_text_full(transcript: str, *, target_language: Optional[str] = None) -> str:
     client = _get_gemini_client()
+    system_instruction = _build_gemini_system_instruction(target_language=target_language)
     resp = await asyncio.to_thread(
         client.models.generate_content,
         model=GEMINI_MODEL,
         contents=transcript,
         config=genai_types.GenerateContentConfig(
-            system_instruction=GEMINI_ACTIVE_PROMPT,
+            system_instruction=system_instruction,
             temperature=0.2,
         ),
     )
@@ -59,6 +73,8 @@ async def gemini_heal_text_full(transcript: str) -> str:
 async def gemini_multimodal_process_full(
     audio_bytes: bytes,
     mime_type: str = "audio/wav",
+    *,
+    target_language: Optional[str] = None,
 ) -> str:
     """Send raw audio directly to Gemini and get healed/translated text back.
 
@@ -71,12 +87,14 @@ async def gemini_multimodal_process_full(
         mime_type=mime_type,
     )
 
+    system_instruction = _build_gemini_system_instruction(target_language=target_language)
+
     resp = await asyncio.to_thread(
         client.models.generate_content,
         model=GEMINI_MODEL,
         contents=[audio_part],
         config=genai_types.GenerateContentConfig(
-            system_instruction=GEMINI_ACTIVE_PROMPT,
+            system_instruction=system_instruction,
             temperature=0.2,
         ),
     )
@@ -89,6 +107,7 @@ async def run_full_pipeline(
     filename: Optional[str],
     output_dir: Path,
     language_code: str = "en",
+    target_language: str = "English",
     use_multimodal: bool = False,
 ) -> FullPipelineResult:
     """Run the full pipeline sequentially, returning artifacts + timings.
@@ -107,7 +126,10 @@ async def run_full_pipeline(
     if use_multimodal:
         # Path 1 – Gemini consumes audio directly.
         t_mm = time.perf_counter()
-        healed_transcript = await gemini_multimodal_process_full(audio_bytes=audio_bytes)
+        healed_transcript = await gemini_multimodal_process_full(
+            audio_bytes=audio_bytes,
+            target_language=target_language,
+        )
         durations["gemini_multimodal"] = time.perf_counter() - t_mm
         # There is no Scribe transcript; mark this explicitly.
         dirty_transcript = "[Native Audio Processed]"
@@ -123,7 +145,10 @@ async def run_full_pipeline(
 
         t1 = time.perf_counter()
         if dirty_transcript.strip():
-            healed_transcript = await gemini_heal_text_full(dirty_transcript)
+            healed_transcript = await gemini_heal_text_full(
+                dirty_transcript,
+                target_language=target_language,
+            )
         durations["gemini"] = time.perf_counter() - t1
 
     t2 = time.perf_counter()
