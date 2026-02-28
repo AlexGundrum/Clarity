@@ -42,15 +42,15 @@ export default function RootLayout({
       >
         {/* Glass whiteboard background */}
         <div className="fixed inset-0 -z-10 overflow-hidden">
-          {/* Base: cool off-white */}
-          <div className="absolute inset-0 bg-[#f8fafc]" />
+          {/* Base: cool off-white with slight blue tint */}
+          <div className="absolute inset-0 bg-[#eef4fb]" />
 
-          {/* Subtle radial gradient — blue tint at center */}
+          {/* Radial gradient — stronger blue tint at center */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse at center, rgba(219,234,254,0.25) 0%, rgba(255,255,255,0) 65%)",
+                "radial-gradient(ellipse at 50% 30%, rgba(186,220,254,0.38) 0%, rgba(255,255,255,0) 65%)",
             }}
           />
 
@@ -59,7 +59,7 @@ export default function RootLayout({
             className="absolute -top-[20%] -left-[10%] h-[60vh] w-[60vh] rounded-full"
             style={{
               background:
-                "radial-gradient(circle, rgba(191,219,254,0.15) 0%, transparent 70%)",
+                "radial-gradient(circle, rgba(147,197,253,0.22) 0%, transparent 70%)",
               animation: "float-blob 25s ease-in-out infinite",
             }}
           />
@@ -67,7 +67,7 @@ export default function RootLayout({
             className="absolute -right-[5%] top-[30%] h-[50vh] w-[50vh] rounded-full"
             style={{
               background:
-                "radial-gradient(circle, rgba(196,181,253,0.08) 0%, transparent 70%)",
+                "radial-gradient(circle, rgba(196,181,253,0.14) 0%, transparent 70%)",
               animation: "float-blob 30s ease-in-out infinite reverse",
             }}
           />
@@ -75,21 +75,32 @@ export default function RootLayout({
             className="absolute bottom-[-10%] left-[40%] h-[45vh] w-[45vh] rounded-full"
             style={{
               background:
-                "radial-gradient(circle, rgba(191,219,254,0.1) 0%, transparent 70%)",
+                "radial-gradient(circle, rgba(147,197,253,0.18) 0%, transparent 70%)",
               animation: "float-blob 20s ease-in-out infinite",
             }}
           />
-
-          {/* Very subtle grid pattern — "whiteboard" feel */}
           <div
-            className="absolute inset-0 opacity-[0.03]"
+            className="absolute -bottom-[10%] -right-[10%] h-[40vh] w-[40vh] rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(186,220,254,0.15) 0%, transparent 70%)",
+              animation: "float-blob 22s ease-in-out infinite 5s",
+            }}
+          />
+
+          {/* Grid pattern — whiteboard feel */}
+          <div
+            className="absolute inset-0 opacity-[0.055]"
             style={{
               backgroundImage:
-                "linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
+                "linear-gradient(rgba(0,0,80,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,80,0.08) 1px, transparent 1px)",
+              backgroundSize: "44px 44px",
             }}
           />
         </div>
+
+        {/* Frosted glass overlay — the "layer between us and the page" */}
+        <div className="glass-page-overlay" />
 
         {children}
       </body>
