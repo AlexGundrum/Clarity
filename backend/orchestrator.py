@@ -90,8 +90,19 @@ class DebugRecorder:
 
     async def finalize(self, metadata: Dict[str, str]) -> None:
         if self._output_chunks:
+            raw_bytes = bytes(self._output_chunks)
             out_path = self._base / "output.raw"
-            await asyncio.to_thread(out_path.write_bytes, bytes(self._output_chunks))
+            await asyncio.to_thread(out_path.write_bytes, raw_bytes)
+            
+            def _write_wav() -> None:
+                import wave
+                wav_path = self._base / "output.wav"
+                with wave.open(str(wav_path), "wb") as w:
+                    w.setnchannels(1)
+                    w.setsampwidth(2)
+                    w.setframerate(24000)
+                    w.writeframes(raw_bytes)
+            await asyncio.to_thread(_write_wav)
 
         if metadata:
             import json
@@ -246,7 +257,9 @@ async def _path_native_multimodal(
     if recorder is not None:
         await recorder.save_input(audio_bytes)
 
+    start_llm = time.time()
     healed_text = await gemini_heal_audio_native(audio_bytes)
+    llm_latency_s = time.time() - start_llm
     entry.healed_text = healed_text
 
     if recorder is not None:
@@ -261,6 +274,7 @@ async def _path_native_multimodal(
         # Fire-and-forget lipsync for each chunk
         asyncio.create_task(generate_lipsync_mask(tts_chunk))
         yield tts_chunk
+    tts_duration_s = time.time() - start_tts
 
     entry.tts_bytes = tts_total
     entry.lipsync_status = "triggered"
@@ -273,7 +287,8 @@ async def _path_native_multimodal(
                 "healed_text": entry.healed_text,
                 "tts_bytes": str(entry.tts_bytes),
                 "duration_s": f"{time.time() - entry.timestamp:.3f}",
-                "tts_latency_s": f"{time.time() - start_tts:.3f}",
+                "llm_latency_s": f"{llm_latency_s:.3f}",
+                "tts_latency_s": f"{tts_duration_s:.3f}",
             }
         )
 
@@ -289,7 +304,9 @@ async def _path_scribe_first(
     if recorder is not None:
         await recorder.save_input(audio_bytes)
 
+    start_stt = time.time()
     transcript = await transcribe_audio(audio_bytes)
+    stt_latency_s = time.time() - start_stt
     entry.transcript = transcript
 
     if recorder is not None and transcript:
@@ -299,7 +316,9 @@ async def _path_scribe_first(
         metadata_buf.push(entry)
         return
 
+    start_llm = time.time()
     healed_text = await gemini_heal_text(transcript)
+    llm_latency_s = time.time() - start_llm
     entry.healed_text = healed_text
 
     if recorder is not None:
@@ -313,6 +332,7 @@ async def _path_scribe_first(
             await recorder.append_output_chunk(tts_chunk)
         asyncio.create_task(generate_lipsync_mask(tts_chunk))
         yield tts_chunk
+    tts_duration_s = time.time() - start_tts
 
     entry.tts_bytes = tts_total
     entry.lipsync_status = "triggered"
@@ -326,7 +346,9 @@ async def _path_scribe_first(
                 "healed_text": entry.healed_text,
                 "tts_bytes": str(entry.tts_bytes),
                 "duration_s": f"{time.time() - entry.timestamp:.3f}",
-                "tts_latency_s": f"{time.time() - start_tts:.3f}",
+                "stt_latency_s": f"{stt_latency_s:.3f}",
+                "llm_latency_s": f"{llm_latency_s:.3f}",
+                "tts_latency_s": f"{tts_duration_s:.3f}",
             }
         )
 

@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Clarity Pipeline Outputs
+backend/tests/artifacts/
+backend/tests/results/
+backend/.env
