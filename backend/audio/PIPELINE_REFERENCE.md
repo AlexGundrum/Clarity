@@ -36,6 +36,14 @@ This document summarizes the non-streaming, one-shot pipeline implemented in:
   "dirty_transcript": "[Native Audio Processed] or full STT transcript string",
   "healed_transcript": "Gemini-cleaned / translated transcript string",
   "final_audio_path": "backend/tests/full_pipeline_output/final_audio_2025...wav",
+  "dirty_words": [
+    {
+      "text": "example",
+      "start_s": 0.12,
+      "end_s": 0.28,
+      "confidence": 0.95
+    }
+  ],
   "durations_s": {
     "stt": 1.234,
     "gemini": 0.789,
@@ -50,6 +58,7 @@ Notes:
 
 - For **Path 2 (Sequential)** you will typically see `stt`, `gemini`, `tts`, `total`.
 - For **Path 1 (Multimodal)** you will see `gemini_multimodal`, `tts`, `total` instead of `stt`/`gemini`.
+- `dirty_words` is populated when STT provides word-level metadata and is used by selective video editing to localize changed spans.
 
 ---
 

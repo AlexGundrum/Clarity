@@ -8,12 +8,30 @@ load_dotenv(dotenv_path=_BACKEND_ENV, override=False)
 # Also load a repo-root `.env` if present (also non-overriding).
 load_dotenv(override=False)
 
+
+def _get_bool_env(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _get_float_env(name: str, default: float) -> float:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
 # ---------------------------------------------------------------------------
 # API Keys
 # ---------------------------------------------------------------------------
 GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
 ELEVENLABS_API_KEY: str = os.getenv("ELEVENLABS_API_KEY", "")
 ELEVENLABS_VOICE_ID: str = os.getenv("ELEVENLABS_VOICE_ID", "")
+FAL_API_KEY: str = os.getenv("FAL_API_KEY", "")
 
 # ---------------------------------------------------------------------------
 # Pipeline mode: "native_multimodal" (Path 1) or "scribe_first" (Path 2)
@@ -76,9 +94,6 @@ GEMINI_ACTIVE_PROMPT: str = (
 # ---------------------------------------------------------------------------
 # Debug / instrumentation
 # ---------------------------------------------------------------------------
-CLARITY_DEBUG_ENABLED: bool = os.getenv("CLARITY_DEBUG_ENABLED", "false").lower() in {
-    "1",
-    "true",
-    "yes",
-}
+CLARITY_DEBUG_ENABLED: bool = _get_bool_env("CLARITY_DEBUG_ENABLED", False)
 CLARITY_DEBUG_DIR: str = os.getenv("CLARITY_DEBUG_DIR", "")
+

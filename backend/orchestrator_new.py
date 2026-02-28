@@ -2,13 +2,14 @@
 
 Flow:
 1) Full STT via ElevenLabs Scribe v2
-2) Full heal/translate via Gemini (prompt from config.py)
-3) Full TTS via ElevenLabs Flash v2.5 (voice id from .env) and save to disk
+2) Full heal/translate via Gemini
+3) Full TTS via ElevenLabs Flash v2.5 -> saved WAV
 """
 
 from __future__ import annotations
 
 import asyncio
+import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -55,14 +56,49 @@ def _build_gemini_system_instruction(target_language: Optional[str] = None) -> s
     )
 
 
+def _parse_retry_delay(exc: Exception) -> float:
+    msg = str(exc)
+    m = re.search(r"retry[^0-9]*(\d+(?:\.\d+)?)\s*s", msg, re.IGNORECASE)
+    if m:
+        return min(float(m.group(1)) + 2.0, 120.0)
+    if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+        return 65.0
+    return 0.0
+
+
+async def _gemini_generate_with_retry(
+    client: genai.Client,
+    model: str,
+    contents: Any,
+    config: genai_types.GenerateContentConfig,
+    *,
+    max_retries: int = 3,
+) -> Any:
+    for attempt in range(max_retries + 1):
+        try:
+            return await asyncio.to_thread(
+                client.models.generate_content,
+                model=model,
+                contents=contents,
+                config=config,
+            )
+        except Exception as exc:
+            delay = _parse_retry_delay(exc)
+            if delay > 0 and attempt < max_retries:
+                print(f"[Gemini] Rate limited – retrying in {delay:.0f}s (attempt {attempt + 1}/{max_retries})")
+                await asyncio.sleep(delay)
+                continue
+            raise
+
+
 async def gemini_heal_text_full(transcript: str, *, target_language: Optional[str] = None) -> str:
     client = _get_gemini_client()
     system_instruction = _build_gemini_system_instruction(target_language=target_language)
-    resp = await asyncio.to_thread(
-        client.models.generate_content,
-        model=GEMINI_MODEL,
-        contents=transcript,
-        config=genai_types.GenerateContentConfig(
+    resp = await _gemini_generate_with_retry(
+        client,
+        GEMINI_MODEL,
+        transcript,
+        genai_types.GenerateContentConfig(
             system_instruction=system_instruction,
             temperature=0.2,
         ),
@@ -89,11 +125,11 @@ async def gemini_multimodal_process_full(
 
     system_instruction = _build_gemini_system_instruction(target_language=target_language)
 
-    resp = await asyncio.to_thread(
-        client.models.generate_content,
-        model=GEMINI_MODEL,
-        contents=[audio_part],
-        config=genai_types.GenerateContentConfig(
+    resp = await _gemini_generate_with_retry(
+        client,
+        GEMINI_MODEL,
+        [audio_part],
+        genai_types.GenerateContentConfig(
             system_instruction=system_instruction,
             temperature=0.2,
         ),
@@ -110,31 +146,20 @@ async def run_full_pipeline(
     target_language: str = "English",
     use_multimodal: bool = False,
 ) -> FullPipelineResult:
-    """Run the full pipeline sequentially, returning artifacts + timings.
-
-    If `use_multimodal` is False (default):
-        Path 2: Scribe STT -> Gemini text heal -> ElevenLabs TTS
-
-    If `use_multimodal` is True:
-        Path 1: Gemini multimodal (audio-native) -> ElevenLabs TTS
-    """
+    """STT -> Gemini heal -> TTS. Returns transcripts + path to healed WAV."""
     durations: Dict[str, float] = {}
-
     dirty_transcript = ""
     healed_transcript = ""
 
     if use_multimodal:
-        # Path 1 – Gemini consumes audio directly.
         t_mm = time.perf_counter()
         healed_transcript = await gemini_multimodal_process_full(
             audio_bytes=audio_bytes,
             target_language=target_language,
         )
         durations["gemini_multimodal"] = time.perf_counter() - t_mm
-        # There is no Scribe transcript; mark this explicitly.
         dirty_transcript = "[Native Audio Processed]"
     else:
-        # Path 2 – Scribe STT followed by Gemini text heal.
         t0 = time.perf_counter()
         dirty_transcript = await transcribe_audio_full(
             audio_bytes=audio_bytes,

@@ -63,6 +63,7 @@ def main() -> int:
     healed = payload.get("healed_transcript", "")
     final_path = payload.get("final_audio_path", "")
     durations = payload.get("durations_s", {}) or {}
+    dirty_words = payload.get("dirty_words", []) or []
 
     print("\n==== Dirty Transcript ====")
     print(dirty)
@@ -70,6 +71,8 @@ def main() -> int:
     print(healed)
     print("\n==== Final Audio Path ====")
     print(final_path)
+    print("\n==== Word Timing Metadata ====")
+    print(f"Dirty word count: {len(dirty_words)}")
 
     print("\n==== Durations (server-reported) ====")
     for k in ["stt", "gemini", "gemini_multimodal", "tts", "total"]:
