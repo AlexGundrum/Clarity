@@ -8,23 +8,23 @@ export function FloatingLogo() {
     <motion.div
       className="relative z-10"
       animate={{
-        y: [0, -15, 0, -10, 0],
-        x: [0, 10, -5, 8, 0],
-        rotate: [0, 3, -2, 4, 0],
-        scale: [1, 1.03, 0.98, 1.02, 1],
+        y: [0, -15, 5, -12, 0],
+        x: [0, 60, -45, 55, 0],
+        rotate: [0, 8, -6, 10, 0],
+        scale: [1, 1.05, 0.98, 1.03, 1],
       }}
       transition={{
-        duration: 25,
+        duration: 15,
         repeat: Infinity,
         ease: "easeInOut",
       }}
     >
       <motion.div
         animate={{
-          opacity: [0.9, 1, 0.85, 1, 0.9],
+          opacity: [0.85, 1, 0.8, 1, 0.85],
         }}
         transition={{
-          duration: 8,
+          duration: 4,
           repeat: Infinity,
           ease: "easeInOut",
         }}

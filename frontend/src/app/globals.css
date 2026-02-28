@@ -314,3 +314,32 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.15);
 }
+
+/* Custom Cursor */
+* {
+  cursor: url('/cursor.svg') 12 12, auto;
+}
+
+/* Cursor states */
+a, button, [role="button"], input[type="submit"], input[type="button"] {
+  cursor: url('/cursor.svg') 12 12, pointer;
+}
+
+input[type="text"], input[type="email"], input[type="password"], textarea, select {
+  cursor: url('/cursor.svg') 12 12, text;
+}
+
+/* Disable custom cursor on mobile */
+@media (hover: none) and (pointer: coarse) {
+  * {
+    cursor: auto !important;
+  }
+  
+  a, button, [role="button"] {
+    cursor: pointer !important;
+  }
+  
+  input, textarea, select {
+    cursor: text !important;
+  }
+}

@@ -1,0 +1,19 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer glow -->
+  <circle cx="12" cy="12" r="10" fill="url(#glow)" opacity="0.3"/>
+  <!-- Main cursor dot -->
+  <circle cx="12" cy="12" r="4" fill="url(#gradient)"/>
+  <!-- Inner highlight -->
+  <circle cx="12" cy="12" r="2" fill="white" opacity="0.6"/>
+  
+  <defs>
+    <radialGradient id="glow">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Permanent_Marker, Caveat } from "next/font/google";
 import "./globals.css";
+import { RainEffect } from "@/components/rain-effect/rain-effect";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -101,6 +102,9 @@ export default function RootLayout({
 
         {/* Frosted glass overlay — the "layer between us and the page" */}
         <div className="glass-page-overlay" />
+
+        {/* Glassmorphism rain effect */}
+        <RainEffect />
 
         {children}
       </body>

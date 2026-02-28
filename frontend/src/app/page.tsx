@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/sidebar";
 import { Hero } from "@/components/hero";
 import { HowItWorks } from "@/components/how-it-works";
+import { BeforeAfter } from "@/components/before-after";
 import { BentoGrid } from "@/components/bento-grid";
 import { Stats } from "@/components/stats";
 import { CtaSection } from "@/components/cta-section";
@@ -15,6 +16,10 @@ export default function Home() {
       <div className="gradient-line mx-auto w-32" />
 
       <HowItWorks />
+
+      <div className="gradient-line mx-auto w-32" />
+
+      <BeforeAfter />
 
       <div className="gradient-line mx-auto w-32" />
 

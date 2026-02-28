@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CorrectionLog } from "./CorrectionLog";
 import { ProcessingWaveform } from "./ProcessingWaveform";
+import { AnimatedTranscript, TranscriptEdit } from "@/components/animated-transcript";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -55,6 +56,46 @@ const LANGUAGE_CODE_TO_TARGET: Record<string, string> = {
 
 interface RecorderProps {
   compareMode: boolean;
+}
+
+// Helper function to parse transcript edits
+function parseTranscriptEdits(dirty: string, healed: string): TranscriptEdit[] {
+  const dirtyWords = dirty.toLowerCase().split(/\s+/);
+  const healedWords = healed.toLowerCase().split(/\s+/);
+  const edits: TranscriptEdit[] = [];
+
+  for (let i = 0; i < dirtyWords.length; i++) {
+    const word = dirtyWords[i];
+    
+    // Detect stutters (repeated syllables with hyphens)
+    if (word.includes("-") && word.length > 2) {
+      const parts = word.split("-");
+      if (parts.length > 1 && parts[0] === parts[1]) {
+        edits.push({
+          type: "stutter",
+          original: word,
+          corrected: parts[0],
+          position: i,
+        });
+      }
+    }
+    
+    // Detect fillers (k-k-k, um, uh, etc.)
+    if (word.match(/^[a-z]-[a-z]-[a-z]/) || ["um", "uh", "like", "you know"].includes(word)) {
+      const healedWord = healedWords[i] || word;
+      if (healedWord !== word) {
+        edits.push({
+          type: "filler",
+          original: word,
+          corrected: healedWord,
+          context: "Context detected",
+          position: i,
+        });
+      }
+    }
+  }
+
+  return edits;
 }
 
 export function Recorder({ compareMode }: RecorderProps) {
@@ -403,6 +444,48 @@ export function Recorder({ compareMode }: RecorderProps) {
           </div>
         )}
       </div>
+
+      {/* Inline Animated Transcript with Strikethrough */}
+      {resultNormal && !isProcessing && (
+        <div className="col-span-2 glass rounded-xl p-6 mt-6">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-slate-800">Live Transcript Analysis</h3>
+            <p className="text-sm text-slate-500">Watch corrections happen in real-time</p>
+          </div>
+          
+          <div className="rounded-xl bg-white/50 p-6 backdrop-blur-sm border border-slate-200 mb-4">
+            <AnimatedTranscript
+              transcript={resultNormal.dirty_transcript}
+              edits={parseTranscriptEdits(resultNormal.dirty_transcript, resultNormal.healed_transcript)}
+              speed={2}
+              autoPlay={true}
+              showControls={true}
+            />
+          </div>
+
+          {/* Detection Summary */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-lg bg-red-50 p-3 text-center">
+              <div className="text-2xl font-bold text-red-600">
+                {parseTranscriptEdits(resultNormal.dirty_transcript, resultNormal.healed_transcript).filter(e => e.type === "stutter").length}
+              </div>
+              <div className="text-xs text-red-700">Stutters Detected</div>
+            </div>
+            <div className="rounded-lg bg-blue-50 p-3 text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {parseTranscriptEdits(resultNormal.dirty_transcript, resultNormal.healed_transcript).filter(e => e.type === "filler").length}
+              </div>
+              <div className="text-xs text-blue-700">Context Fills</div>
+            </div>
+            <div className="rounded-lg bg-green-50 p-3 text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {parseTranscriptEdits(resultNormal.dirty_transcript, resultNormal.healed_transcript).filter(e => e.context).length}
+              </div>
+              <div className="text-xs text-green-700">Context Matches</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

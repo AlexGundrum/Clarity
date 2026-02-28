@@ -9,50 +9,25 @@ import { MarkerText } from "@/components/marker-text";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { Marquee } from "@/components/ui/marquee";
 import { FloatingLogo } from "@/components/floating-logo";
+import { LiveTranscriptOverlay } from "@/components/live-transcript-overlay";
 
 /* ── Platform logos for inline marquee ── */
-function ZoomLogo() {
+function CUhackitLogo() {
     return (
-        <svg viewBox="0 0 100 28" fill="currentColor" className="h-4 w-auto">
-            <text x="0" y="22" fontSize="20" fontWeight="700" letterSpacing="-0.5" style={{ fontFamily: "var(--font-geist-sans)" }}>Zoom</text>
-        </svg>
-    );
-}
-function TeamsLogo() {
-    return (
-        <svg viewBox="0 0 170 28" fill="currentColor" className="h-4 w-auto">
-            <text x="0" y="22" fontSize="20" fontWeight="700" letterSpacing="-0.5" style={{ fontFamily: "var(--font-geist-sans)" }}>Microsoft Teams</text>
-        </svg>
-    );
-}
-function MeetLogo() {
-    return (
-        <svg viewBox="0 0 150 28" fill="currentColor" className="h-4 w-auto">
-            <text x="0" y="22" fontSize="20" fontWeight="700" letterSpacing="-0.5" style={{ fontFamily: "var(--font-geist-sans)" }}>Google Meet</text>
-        </svg>
-    );
-}
-function DiscordLogo() {
-    return (
-        <svg viewBox="0 0 110 28" fill="currentColor" className="h-4 w-auto">
-            <text x="0" y="22" fontSize="20" fontWeight="700" letterSpacing="-0.5" style={{ fontFamily: "var(--font-geist-sans)" }}>Discord</text>
-        </svg>
-    );
-}
-function WebexLogo() {
-    return (
-        <svg viewBox="0 0 100 28" fill="currentColor" className="h-4 w-auto">
-            <text x="0" y="22" fontSize="20" fontWeight="700" letterSpacing="-0.5" style={{ fontFamily: "var(--font-geist-sans)" }}>Webex</text>
+        <svg viewBox="0 0 140 32" fill="none" className="h-6 w-auto">
+            <rect x="4" y="6" width="20" height="20" rx="4" fill="#FF6B35" />
+            <text x="8" y="22" fontSize="14" fontWeight="700" fill="white" style={{ fontFamily: "system-ui, -apple-system" }}>CU</text>
+            <text x="30" y="21" fontSize="16" fontWeight="600" fill="currentColor" style={{ fontFamily: "system-ui, -apple-system" }}>hackit</text>
         </svg>
     );
 }
 
 const logos = [
-    { name: "Zoom", icon: ZoomLogo },
-    { name: "Microsoft Teams", icon: TeamsLogo },
-    { name: "Google Meet", icon: MeetLogo },
-    { name: "Discord", icon: DiscordLogo },
-    { name: "Webex", icon: WebexLogo },
+    { name: "Zoom", src: "/logos/zoom-communications-logo.svg" },
+    { name: "Microsoft Teams", src: "/logos/microsoft-teams-1.svg" },
+    { name: "Google Meet", src: "/logos/google-meet-icon-2020-.svg" },
+    { name: "Discord", src: "/logos/discord.svg" },
+    { name: "CUhackit", icon: CUhackitLogo },
 ];
 
 export function Hero() {
@@ -63,7 +38,7 @@ export function Hero() {
     });
 
     const heroY = useTransform(scrollYProgress, [0, 1], [0, -80]);
-    const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+    const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 1]);
 
     return (
         <section
@@ -125,14 +100,18 @@ export function Hero() {
                         <Marquee pauseOnHover className="[--duration:25s] [--gap:2.5rem]">
                             {logos.map((logo) => (
                                 <div key={logo.name} className="flex items-center px-4 text-slate-300 transition-all duration-300 hover:text-slate-600">
-                                    <logo.icon />
+                                    {logo.icon ? (
+                                        <logo.icon />
+                                    ) : (
+                                        <Image src={logo.src!} alt={logo.name} width={120} height={32} className="h-8 w-auto" />
+                                    )}
                                 </div>
                             ))}
                         </Marquee>
                     </div>
                 </ScrollReveal>
 
-                {/* Video Container */}
+                {/* Video Container with Live Transcript Overlay */}
                 <ScrollReveal delay={0.8} scale className="mt-10 w-full max-w-5xl px-4">
                     <div className="glass-heavy glow-frame relative overflow-hidden rounded-2xl">
                         <div className="flex items-center gap-2 border-b border-slate-200/40 px-5 py-3">
@@ -143,23 +122,28 @@ export function Hero() {
                                 clarity — live session
                             </span>
                         </div>
-                        <div className="relative aspect-video w-full bg-slate-100/50">
-                            <video autoPlay loop muted playsInline className="h-full w-full object-cover mix-blend-multiply" src="/clarity-demo-reel.mp4" />
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50/60 via-white/40 to-slate-50/60">
-                                <div className="glass flex h-20 w-20 items-center justify-center rounded-2xl">
-                                    <svg className="h-8 w-8 text-blue-500/50" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                                    </svg>
+                        <div className="relative aspect-video w-full bg-slate-900">
+                            <video 
+                                autoPlay 
+                                loop 
+                                muted 
+                                playsInline 
+                                className="h-full w-full object-cover" 
+                                src="/demo-videos/demovideo1.mp4" 
+                            />
+                            
+                            {/* Transcript Overlay */}
+                            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-900/95 via-slate-900/80 to-transparent">
+                                <div className="glass-heavy rounded-xl p-4 max-w-2xl">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                                        <span className="text-xs font-semibold text-white/90">LIVE TRANSCRIPTION</span>
+                                    </div>
+                                    <LiveTranscriptOverlay />
                                 </div>
-                                <p className="text-annotation mt-4 text-base text-slate-400">
-                                    Demo Reel — coming soon
-                                </p>
                             </div>
                         </div>
                     </div>
-                    <p className="text-annotation mt-4 text-center text-base text-slate-400">
-                        ↑ real‑time audio correction in action
-                    </p>
                 </ScrollReveal>
             </motion.div>
         </section>
